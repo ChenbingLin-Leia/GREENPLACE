@@ -1,0 +1,225 @@
+/* 基础重置样式 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #fefff6;
+    overflow: hidden; /* 防止整个页面滚动 */
+}
+
+/* status of canvas */
+.screen {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/*start screen*/
+#start-screen {
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #7ebc88, #7ebc88);
+    color: black;
+}
+
+#user-info-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 300px;
+    
+}
+
+#user-info-form input, #user-info-form select {
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    background: #f6f5dd;
+}
+
+#user-info-form input:focus, #user-info-form select:focus {
+    background-color: #f6f5dd; /* 保持背景色不变 */
+}
+
+#start-btn {
+    padding: 12px;
+    background: #cad4af;
+    color: black;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#start-btn:hover {
+    background: #f6f5dd;
+}
+
+/* 主界面样式 */
+#main-screen {
+    background-color: #cad4af;
+}
+
+/* 修改现有的 #visualization-container 样式 */
+#visualization-container {
+    background-color: #f6f5dd; /* 与信件容器相同的背景色 */
+    height: 50vh;
+    /* 添加边框效果 */
+    border-radius: 4px; /* 改为4px与信件容器一致 */
+    margin: 20px;
+    box-shadow: 
+        inset 0 0 20px rgba(0, 0, 0, 0.05),
+        0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+/* 调整Canvas本身，确保它填满容器但不溢出 */
+#p5-canvas {
+    width: 100%;
+    height: 100%;
+    display: block; /* 移除可能的空白 */
+}
+
+/* 信件容器占下半部分 */
+#letter-container {
+    height: 50vh;
+    background-color: #cad4af;
+    color: black;
+    padding: 20px;
+    overflow-y: auto; /* 允许信件内容滚动 */
+}
+#letter-content {
+    margin-bottom: 20px;
+    line-height: 1.6;
+    font-family: 'Courier New', monospace; /* 打字机字体 */
+    /* 在信件容器中添加一些反光效果 */
+    background-color: #f6f5dd;
+    padding: 25px;
+    border-radius: 4px;
+    box-shadow: 
+        inset 0 0 20px rgba(0, 0, 0, 0.05),
+        0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* 增强选项按钮的塑料质感 */
+.option-btn {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.option-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 
+        0 4px 8px rgba(0, 0, 0, 0.1),
+        0 0 10px #6feaa64d;
+}
+/* ========== 超级脉动效果 ========== */
+@keyframes superPlasticPulse {
+  0% {
+    text-shadow: 
+      0 0 3px rgba(var(--pulse-r), var(--pulse-g), var(--pulse-b), calc(0.4 * var(--pulse-intensity))),
+      0 0 8px rgba(var(--pulse-r), var(--pulse-g), var(--pulse-b), calc(0.3 * var(--pulse-intensity))),
+      0 0 15px rgba(var(--pulse-r), var(--pulse-g), var(--pulse-b), calc(0.2 * var(--pulse-intensity))),
+      0 0 25px rgba(var(--pulse-r), var(--pulse-g), var(--pulse-b), calc(0.1 * var(--pulse-intensity)));
+    transform: scale(1) translateY(0);
+  }
+  25% {
+    text-shadow: 
+      0 0 6px rgba(var(--pulse-r), var(--pulse-g), var(--pulse-b), calc(0.6 * var(--pulse-intensity))),
+      0 0 15px rgba(var(--pulse-r), var(--pulse-g), var(--pulse-b), calc(0.5 * var(--pulse-intensity))),
+      0 0 25px rgba(var(--pulse-r), var(--pulse-g), var(--pulse-b), calc(0.4 * var(--pulse-intensity))),
+      0 0 40px rgba(var(--pulse-r), var(--pulse-g), var(--pulse-b), calc(0.3 * var(--pulse-intensity)));
+    transform: scale(1.03) translateY(-1px);
+  }
+  50% {
+    text-shadow: 
+      0 0 10px rgba(var(--pulse-r), var(--pulse-g), var(--pulse-b), calc(0.9 * var(--pulse-intensity))),
+      0 0 25px rgba(var(--pulse-r), var(--pulse-g), var(--pulse-b), calc(0.7 * var(--pulse-intensity))),
+      0 0 40px rgba(var(--pulse-r), var(--pulse-g), var(--pulse-b), calc(0.5 * var(--pulse-intensity))),
+      0 0 60px rgba(var(--pulse-r), var(--pulse-g), var(--pulse-b), calc(0.3 * var(--pulse-intensity)));
+    transform: scale(1.06) translateY(-2px);
+  }
+  75% {
+    text-shadow: 
+      0 0 6px rgba(var(--pulse-r), var(--pulse-g), var(--pulse-b), calc(0.6 * var(--pulse-intensity))),
+      0 0 15px rgba(var(--pulse-r), var(--pulse-g), var(--pulse-b), calc(0.5 * var(--pulse-intensity))),
+      0 0 25px rgba(var(--pulse-r), var(--pulse-g), var(--pulse-b), calc(0.4 * var(--pulse-intensity))),
+      0 0 40px rgba(var(--pulse-r), var(--pulse-g), var(--pulse-b), calc(0.3 * var(--pulse-intensity)));
+    transform: scale(1.03) translateY(-1px);
+  }
+  100% {
+    text-shadow: 
+      0 0 3px rgba(var(--pulse-r), var(--pulse-g), var(--pulse-b), calc(0.4 * var(--pulse-intensity))),
+      0 0 8px rgba(var(--pulse-r), var(--pulse-g), var(--pulse-b), calc(0.3 * var(--pulse-intensity))),
+      0 0 15px rgba(var(--pulse-r), var(--pulse-g), var(--pulse-b), calc(0.2 * var(--pulse-intensity))),
+      0 0 25px rgba(var(--pulse-r), var(--pulse-g), var(--pulse-b), calc(0.1 * var(--pulse-intensity)));
+    transform: scale(1) translateY(0);
+  }
+}
+
+.plastic-pulse {
+    animation: superPlasticPulse var(--pulse-speed) cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    display: inline-block;
+    position: relative;
+    font-weight: 550; /* 加粗字体增强效果 */
+}
+
+/* pattern for plastic letters */
+.plastic-letter {
+    transition: color 0.3s ease;
+}
+
+/* 选项按钮样式 */
+.option-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    background: #7ebc88;
+    color: black;
+    border: 1px solid #a4d1a3;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    text-align: left;
+}
+
+.option-btn:hover {
+    background: #a4d1a3;
+}
+
+/* 结局界面样式 */
+#end-screen {
+    justify-content: center;
+    align-items: center;
+    background: #7ebc88;
+    color: black;
+    padding: 40px;
+}
+
+#report-content {
+    max-width: 600px;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+#take-selfie {
+    padding: 15px 30px;
+    background: #f6f5dd;
+    color: black;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 18px;
+}

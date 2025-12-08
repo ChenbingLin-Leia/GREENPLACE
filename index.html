@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dear Future - SAVE PLANET JOIN GREENPEACE</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- create start screen -->
+    <div id="start-screen" class="screen">
+        <h1>GREENPEACE Shareholder Compatibility Test</h1>
+        <div id="user-info-form">
+            <input type="text" id="first-name" placeholder="First Name" required>
+            <input type="text" id="last-name" placeholder="Last Name" required>
+            <select id="gender">
+                <option value="">Select Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+            </select>
+            <button id="start-btn">Begin Survey</button>
+        </div>
+    </div>
+
+    <!--create main screen-->
+    <div id="main-screen" class="screen hidden">
+        <!-- upper part: letter visualization area -->
+        <div id="visualization-container">
+            <div id="p5-canvas"></div>
+        </div>
+        
+        <!-- lower part: letter interaction area -->
+        <div id="letter-container">
+            <div id="letter-content">
+                <!-- Fill letter contentthrough JavaScript -->
+            </div>
+            <div id="options-container">
+                <!-- Generate option buttons through JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- create end screen -->
+    <div id="end-screen" class="screen hidden">
+        <div id="report-content">
+            <!-- Generate report through JavaScript -->
+        </div>
+        <div id="selfie-option">
+            <button id="take-selfie">Continue our cooperation</button>
+        </div>
+    </div>
+
+    <!-- Import JavaScript libraries and scripts -->
+    <script src="p5.js"></script>
+    <script src="p5.sound.min.js"></script>
+    <script src="sketch.js"></script>
+</body>
+</html>
