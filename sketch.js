@@ -467,11 +467,7 @@ function showLetter3() {
     const rawLetterText = `
         <p>Dear ${namePrefix}${userName.last},</p>
         <p>Dad passed away last month. The doctor said it was a respiratory disease caused by long-term exposure to microplastics.</p>
-<<<<<<< HEAD
-        <p>I don't know what to do with this grief. Everything feels meaningless. Dad always said the paper mill was safe, and he was just dealing with wood pulp.${addressSuffix} you also work at the paper mill, don't you? But now... I'm starting to question everything.</p>
-=======
         <p>I don't know what to do with this grief. Everything feels meaningless. Dad always said the paper mill was safe, and he was just dealing with wood pulp. ${userName.gender === 'male' ? 'Sir' : 'Madam'}, you also work at the paper mill, don't you? But now... I'm starting to question everything.</p>
->>>>>>> ca274977472b644d4fc360f61bbcdd631d59c8c3
         <p>Yesterday, GREENPLACE contacted me. They're offering a scholarship in Dad's name - "The Thomas Memorial Scholarship for Environmental Studies". They said it's to support the next generation and honor his legacy.</p>
         <p>But how can I accept this? The fund from the same company that might have contributed to the pollution that killed him? Yet, turning it down feels like rejecting Dad's memory. I'm so lost.</p>
         <p>What should I do?</p>
