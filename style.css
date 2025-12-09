@@ -1,4 +1,4 @@
-/* basic */
+/* 基础重置样式 */
 * {
     margin: 0;
     padding: 0;
@@ -8,7 +8,7 @@
 body {
     font-family: Arial, sans-serif;
     background-color: #fefff6;
-    overflow: hidden; /* prevent entire page from scrolling */
+    overflow: hidden; /* 防止整个页面滚动 */
 }
 
 /* status of canvas */
@@ -30,6 +30,7 @@ body {
     background: linear-gradient(135deg, #7ebc88, #7ebc88);
     color: black;
 }
+
 #user-info-form {
     display: flex;
     flex-direction: column;
@@ -37,6 +38,7 @@ body {
     width: 300px;
     
 }
+
 #user-info-form input, #user-info-form select {
     padding: 10px;
     border: none;
@@ -44,9 +46,11 @@ body {
     font-size: 16px;
     background: #f6f5dd;
 }
+
 #user-info-form input:focus, #user-info-form select:focus {
-    background-color: #f6f5dd; /* keep background color unchanged */
+    background-color: #f6f5dd; /* 保持背景色不变 */
 }
+
 #start-btn {
     padding: 12px;
     background: #cad4af;
@@ -56,46 +60,49 @@ body {
     cursor: pointer;
     font-size: 16px;
 }
+
 #start-btn:hover {
     background: #f6f5dd;
 }
 
-/* main screen style */
+/* 主界面样式 */
 #main-screen {
     background-color: #cad4af;
 }
-/* visualization-container style */
+
+/* 修改现有的 #visualization-container 样式 */
 #visualization-container {
-    background-color: #f6f5dd; /* same background color as letter container */
+    background-color: #f6f5dd; /* 与信件容器相同的背景色 */
     height: 50vh;
-    /* add border effect */
-    border-radius: 4px; /* changed to 4px to match letter container */
+    /* 添加边框效果 */
+    border-radius: 4px; /* 改为4px与信件容器一致 */
     margin: 20px;
     box-shadow: 
         inset 0 0 20px rgba(0, 0, 0, 0.05),
         0 4px 6px rgba(0, 0, 0, 0.1);
     overflow: hidden;
 }
-/* Adjust the canvas itself to ensure it fills the container without overflowing */
+
+/* 调整Canvas本身，确保它填满容器但不溢出 */
 #p5-canvas {
     width: 100%;
     height: 100%;
-    display: block; /* remove possible whitespace */
+    display: block; /* 移除可能的空白 */
 }
 
-/* letter container occupies the bottom half */
+/* 信件容器占下半部分 */
 #letter-container {
     height: 50vh;
     background-color: #cad4af;
     color: black;
     padding: 20px;
-    overflow-y: auto; /* allow letter content scrolling */
+    overflow-y: auto; /* 允许信件内容滚动 */
 }
 #letter-content {
     margin-bottom: 20px;
     line-height: 1.6;
-    font-family: 'Courier New', monospace; /* typewriter font */
-    /* add some reflective effect in the letter container */
+    font-family: 'Courier New', monospace; /* 打字机字体 */
+    /* 在信件容器中添加一些反光效果 */
     background-color: #f6f5dd;
     padding: 25px;
     border-radius: 4px;
@@ -103,19 +110,21 @@ body {
         inset 0 0 20px rgba(0, 0, 0, 0.05),
         0 4px 6px rgba(0, 0, 0, 0.1);
 }
-/* enhance plastic texture of option buttons */
+
+/* 增强选项按钮的塑料质感 */
 .option-btn {
     position: relative;
     overflow: hidden;
     transition: all 0.3s ease;
 }
+
 .option-btn:hover {
     transform: translateY(-1px);
     box-shadow: 
         0 4px 8px rgba(0, 0, 0, 0.1),
         0 0 10px #6feaa64d;
 }
-/* pulse effect */
+/* ========== 超级脉动效果 ========== */
 @keyframes superPlasticPulse {
   0% {
     text-shadow: 
@@ -158,12 +167,14 @@ body {
     transform: scale(1) translateY(0);
   }
 }
+
 .plastic-pulse {
     animation: superPlasticPulse var(--pulse-speed) cubic-bezier(0.4, 0, 0.2, 1) infinite;
     display: inline-block;
     position: relative;
-    font-weight: 550; /* bold font to enhance effect */
+    font-weight: 550; /* 加粗字体增强效果 */
 }
+
 /* pattern for plastic letters */
 .plastic-letter {
     transition: color 0.3s ease;
@@ -183,9 +194,11 @@ body {
     font-family: 'Courier New', monospace;
     text-align: left;
 }
+
 .option-btn:hover {
     background: #a4d1a3;
 }
+
 /* 结局界面样式 */
 #end-screen {
     justify-content: center;
@@ -194,11 +207,13 @@ body {
     color: black;
     padding: 40px;
 }
+
 #report-content {
     max-width: 600px;
     text-align: center;
     margin-bottom: 30px;
 }
+
 #take-selfie {
     padding: 15px 30px;
     background: #f6f5dd;

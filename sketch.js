@@ -879,18 +879,24 @@ function takeSelfie() {
 
 // ========== keyboard functions ==========
 function drawCoverRect() {
-  //avoid other visualization to mess up the keyboard area
   push();
+  
+  // 计算键盘的基本参数（与drawKeyboard中相同的计算方式）
   const keyboardWidth = width / 6;
   const keyboardHeight = height / 2;
   const cellSize = keyboardWidth / 3;
   const keyboardX = (width / 8) - (keyboardWidth / 2);
   const keyboardY = (height * 0.4) - (keyboardHeight / 2);
-  const padding = 4; 
+  const padding = 4; // 键盘内键间隔
   
+  // 矩形宽度：从画布最左侧到键盘右侧加上一个键盘内部键的间隔
   const rectRight = keyboardX + keyboardWidth + 3*padding;
+  
+  // 设置矩形样式
   noStroke();
-  fill(246, 245, 221); // #f6f5dd color
+  fill(246, 245, 221); // 与背景相同的颜色 #f6f5dd
+  
+  // 绘制矩形：覆盖从画布左侧到键盘右侧+padding的区域，高度为整个画布
   rect(0, 0, rectRight, height);
   
   pop();
@@ -1834,13 +1840,14 @@ function drawWASDHint() {
 }
 function drawSmallKey(x, y, w, h, letter, colorArray, alphaValue) {
   push();
-  // keys
+  
+  // 纯色填充（#cad4af）
   const [r, g, b] = colorArray;
   noStroke();
   fill(r, g, b, alphaValue);
-  rect(x, y, w, h, 2); // rounded corners
+  rect(x, y, w, h, 2); // 小圆角
   
-  // key labels
+  // 字母（#fefff6）
   textSize(w * 0.4);
   textStyle(BOLD);
   textAlign(CENTER, CENTER);
@@ -1849,7 +1856,6 @@ function drawSmallKey(x, y, w, h, letter, colorArray, alphaValue) {
   
   pop();
 }
-
 // ========== resize function ==========
 function windowResized() {
   // resize Canvas
