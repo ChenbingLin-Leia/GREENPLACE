@@ -69,6 +69,16 @@ let showWASDHint = true; // set show hint initially to true
 let wasdHintAlpha = 0;   // opacity value
 let wasdHintPhase = 0;   // opacity change phase (0-1)
 let wasdHintSpeed = 0.01; // opacity change speed
+// ========== ASCII自拍系统全局变量 ==========
+let capture; // 摄像头捕获
+let asciiGraphics; // ASCII图形缓冲区
+let asciiCanvas; // ASCII画布
+let takingSelfie = false; // 是否正在拍照
+let asciiChars = []; // ASCII字符集
+let asciiDisplay; // 显示ASCII艺术的元素
+let asciiScale = 2; // ASCII字符缩放
+let asciiResolution = 8; // 分辨率（像素到字符的映射）
+let asciiBrightness = 1.0; // 亮度调整
 // ========== preload function ==========
 function preload() {
     //texture preload
@@ -129,7 +139,21 @@ function colorizeText(text) {
     ">${match}</span>`;
   });
 }
-
+// ========== 初始化ASCII字符集 ==========
+function initAsciiChars() {
+  // 从暗到亮的字符序列，创建更多灰度层次
+  asciiChars = [
+    '@', '#', '&', '%', 'W', 'M', 'B', 'E', 'R', 'N', 
+    'Q', 'g', 'm', 'w', 'q', 'p', 'd', 'b', 'k', 'h', 
+    'a', 'o', 'e', 'c', 'z', 'x', 's', 'r', 'j', 'f', 
+    't', '/', '\\', '|', '(', ')', '1', '{', '}', '[', 
+    ']', '?', '-', '_', '+', '~', '<', '>', 'i', '!', 
+    'l', 'I', ';', ':', ',', '"', '^', '`', "'", '.', ' '
+  ];
+  
+  // 反转字符数组，使暗字符对应暗像素，亮字符对应亮像素
+  asciiChars.reverse();
+}
 // ========== p5.js core functions ==========
 function setup() {
     //canvas setup
@@ -872,9 +896,341 @@ function getCompatibilityFeedback() {
 function playCompletionSound() {
     console.log("Completion sound played");
 }
+// ========== 修改现有的takeSelfie函数 ==========
 function takeSelfie() {
-    alert("ASCII selfie feature will be implemented here!");
+  console.log("Taking ASCII selfie...");
+  
+  // 隐藏结局界面，显示ASCII相机界面
+  select('#end-screen').addClass('hidden');
+  
+  // 创建ASCII相机界面
+  createAsciiCameraUI();
+  
+  // 初始化摄像头
+  initCamera();
 }
+// ========== 创建ASCII相机界面 ==========
+function createAsciiCameraUI() {
+  // 创建相机容器
+  const cameraContainer = createDiv('');
+  cameraContainer.id('ascii-camera-container');
+  cameraContainer.style(`
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, #7ebc88, #cad4af);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  `);
+  cameraContainer.parent('main-screen');
+  
+  // 创建标题
+  const title = createElement('h2', 'GREENPEACE Shareholder Portrait');
+  title.parent('#ascii-camera-container');
+  title.style(`
+    color: #fefff6;
+    font-family: 'Courier New', monospace;
+    margin-bottom: 30px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  `);
+  
+  // 创建预览容器
+  const previewContainer = createDiv('');
+  previewContainer.id('ascii-preview-container');
+  previewContainer.style(`
+    position: relative;
+    background: #f6f5dd;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    margin-bottom: 30px;
+  `);
+  previewContainer.parent('#ascii-camera-container');
+  
+  // 创建ASCII画布容器
+  const canvasContainer = createDiv('');
+  canvasContainer.id('ascii-canvas-container');
+  canvasContainer.style(`
+    overflow: auto;
+    max-height: 60vh;
+    border: 2px solid #7ebc88;
+    background: #000;
+  `);
+  canvasContainer.parent('#ascii-preview-container');
+  
+  // 创建控制面板
+  const controls = createDiv('');
+  controls.id('ascii-controls');
+  controls.style(`
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+  `);
+  controls.parent('#ascii-camera-container');
+  
+  // 创建捕获按钮
+  const captureBtn = createButton('CAPTURE ASCII PORTRAIT');
+  captureBtn.id('capture-ascii-btn');
+  captureBtn.style(`
+    padding: 15px 30px;
+    background: #7ebc88;
+    color: #fefff6;
+    border: none;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  `);
+  captureBtn.parent('#ascii-controls');
+  captureBtn.mousePressed(captureAsciiSelfie);
+  
+  // 创建保存按钮
+  const saveBtn = createButton('SAVE PORTRAIT');
+  saveBtn.id('save-ascii-btn');
+  saveBtn.style(`
+    padding: 15px 30px;
+    background: #e0a615;
+    color: #fefff6;
+    border: none;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  `);
+  saveBtn.parent('#ascii-controls');
+  saveBtn.mousePressed(saveAsciiArt);
+  
+  // 创建返回按钮
+  const backBtn = createButton('RETURN TO REPORT');
+  backBtn.id('back-to-report-btn');
+  backBtn.style(`
+    padding: 15px 30px;
+    background: #6feaa6;
+    color: #fefff6;
+    border: none;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  `);
+  backBtn.parent('#ascii-controls');
+  backBtn.mousePressed(backToReport);
+  
+  // 创建提示文本
+  const hint = createElement('p', 'Allow camera access when prompted. Your portrait will be converted to ASCII art.');
+  hint.style(`
+    color: #fefff6;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    max-width: 600px;
+    text-align: center;
+    margin-top: 20px;
+    opacity: 0.8;
+  `);
+  hint.parent('#ascii-camera-container');
+}
+
+// ========== 初始化摄像头 ==========
+function initCamera() {
+  // 初始化ASCII字符集
+  initAsciiChars();
+  
+  // 检查浏览器是否支持getUserMedia
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    console.error("Camera not supported");
+    alert("Your browser does not support camera access. Please use Chrome, Firefox, or Edge.");
+    return;
+  }
+  
+  // 请求摄像头权限
+  capture = createCapture(VIDEO, () => {
+    console.log("Camera access granted");
+    capture.size(320, 240); // 设置摄像头尺寸
+    capture.hide(); // 隐藏原始视频元素
+    
+    // 创建ASCII图形缓冲区
+    asciiGraphics = createGraphics(640, 480);
+    
+    // 开始绘制ASCII预览
+    takingSelfie = true;
+  });
+  
+  capture.onError = (err) => {
+    console.error("Camera error:", err);
+    alert("Failed to access camera. Please check permissions and try again.");
+  };
+}
+// ========== 捕获并渲染ASCII自拍 ==========
+function captureAsciiSelfie() {
+  if (!capture) {
+    alert("Camera not ready. Please wait...");
+    return;
+  }
+  
+  console.log("Capturing ASCII selfie...");
+  
+  // 获取视频帧
+  capture.loadPixels();
+  
+  if (!capture.pixels || capture.pixels.length === 0) {
+    alert("No video frame available. Please try again.");
+    return;
+  }
+  
+  // 清空画布容器
+  select('#ascii-canvas-container').html('');
+  
+  // 创建预格式化文本元素
+  asciiDisplay = createElement('pre', '');
+  asciiDisplay.id('ascii-display');
+  asciiDisplay.style(`
+    margin: 0;
+    padding: 10px;
+    font-family: 'Courier New', monospace;
+    font-size: ${asciiScale * 8}px;
+    line-height: ${asciiScale * 8}px;
+    letter-spacing: ${asciiScale * 0.5}px;
+    color: #6feaa6;
+    background: #000;
+    text-align: center;
+    white-space: pre;
+  `);
+  asciiDisplay.parent('#ascii-canvas-container');
+  
+  // 生成ASCII艺术
+  generateAsciiArt();
+}
+
+// ========== 生成ASCII艺术 ==========
+function generateAsciiArt() {
+  if (!capture) return;
+  
+  let asciiArt = '';
+  const captureWidth = capture.width;
+  const captureHeight = capture.height;
+  
+  // 计算字符网格
+  const gridWidth = Math.floor(captureWidth / asciiResolution);
+  const gridHeight = Math.floor(captureHeight / asciiResolution);
+  
+  // 遍历网格
+  for (let gridY = 0; gridY < gridHeight; gridY++) {
+    for (let gridX = 0; gridX < gridWidth; gridX++) {
+      // 计算当前网格对应的像素位置
+      const pixelX = Math.floor(gridX * asciiResolution + asciiResolution / 2);
+      const pixelY = Math.floor(gridY * asciiResolution + asciiResolution / 2);
+      
+      // 确保不越界
+      if (pixelX >= 0 && pixelX < captureWidth && pixelY >= 0 && pixelY < captureHeight) {
+        // 获取像素索引
+        const idx = (pixelY * captureWidth + pixelX) * 4;
+        
+        // 获取RGB值
+        const r = capture.pixels[idx];
+        const g = capture.pixels[idx + 1];
+        const b = capture.pixels[idx + 2];
+        
+        // 计算灰度值（使用心理学公式）
+        let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+        
+        // 应用亮度调整
+        gray *= asciiBrightness;
+        gray = constrain(gray, 0, 255);
+        
+        // 将灰度映射到字符索引
+        const charIndex = Math.floor(map(gray, 0, 255, 0, asciiChars.length - 1));
+        const char = asciiChars[charIndex];
+        
+        // 添加到ASCII艺术字符串
+        asciiArt += char;
+      } else {
+        // 越界时添加空格
+        asciiArt += ' ';
+      }
+    }
+    // 每行结束添加换行符
+    asciiArt += '\n';
+  }
+  
+  // 添加GREENPEACE水印
+  asciiArt += '\n\n';
+  asciiArt += 'GREENPEACE SHAREHOLDER PORTRAIT\n';
+  asciiArt += `${userName.first} ${userName.last}\n`;
+  asciiArt += `PLASTIC SCORE: ${calculateCompatibilityScore()}%\n`;
+  asciiArt += 'PLASTIC UTTERANCE: ' + Math.min(...Object.values(plasticCounts));
+  
+  // 更新显示
+  asciiDisplay.html(asciiArt);
+  
+  // 存储ASCII艺术供保存使用
+  window.asciiArtText = asciiArt;
+}
+
+// ========== 保存ASCII艺术 ==========
+function saveAsciiArt() {
+  if (!window.asciiArtText) {
+    alert("No ASCII art to save. Please capture a portrait first.");
+    return;
+  }
+  
+  // 创建文件名
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const filename = `GREENPEACE_${userName.first}_${userName.last}_${timestamp}.txt`;
+  
+  // 创建Blob并下载
+  const blob = new Blob([window.asciiArtText], { type: 'text/plain' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  
+  console.log("ASCII art saved:", filename);
+  
+  // 显示保存成功消息
+  const savedMsg = createElement('p', 'Portrait saved successfully!');
+  savedMsg.style(`
+    color: #6feaa6;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    margin-top: 10px;
+  `);
+  savedMsg.parent('#ascii-camera-container');
+  
+  // 3秒后移除消息
+  setTimeout(() => {
+    savedMsg.remove();
+  }, 3000);
+}
+
+// ========== 返回报告界面 ==========
+function backToReport() {
+  // 停止摄像头
+  if (capture) {
+    capture.stop();
+    capture = null;
+  }
+  
+  // 移除相机界面
+  const cameraContainer = select('#ascii-camera-container');
+  if (cameraContainer) {
+    cameraContainer.remove();
+  }
+  
+  // 显示结局界面
+  select('#end-screen').removeClass('hidden');
+}
+
 //////////////////////////////////
 
 // ========== keyboard functions ==========
@@ -1858,7 +2214,19 @@ function drawSmallKey(x, y, w, h, letter, colorArray, alphaValue) {
 }
 // ========== resize function ==========
 function windowResized() {
-  // resize Canvas
+  // 如果正在拍照，停止摄像头
+  if (takingSelfie && capture) {
+    capture.stop();
+    capture = null;
+    takingSelfie = false;
+  }
+  
+  // 移除相机界面
+  const cameraContainer = select('#ascii-camera-container');
+  if (cameraContainer) {
+    cameraContainer.remove();
+  }
+  
+  // 调整Canvas大小
   resizeCanvas(windowWidth, windowHeight * 0.5);
-
 }

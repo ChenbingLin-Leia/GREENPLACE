@@ -223,3 +223,55 @@ body {
     cursor: pointer;
     font-size: 18px;
 }
+/* ASCII相机界面样式 */
+#ascii-camera-container h2 {
+    font-family: 'Courier New', monospace;
+    color: #fefff6;
+    margin-bottom: 20px;
+}
+
+#ascii-preview-container {
+    background: #000;
+    padding: 10px;
+    border: 3px solid #6feaa6;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+#ascii-canvas-container {
+    max-height: 50vh;
+    overflow-y: auto;
+    background: #000;
+}
+
+#ascii-display {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 12px;
+    letter-spacing: 1px;
+    color: #6feaa6;
+    margin: 0;
+    padding: 10px;
+}
+
+/* 按钮悬停效果 */
+#capture-ascii-btn:hover,
+#save-ascii-btn:hover,
+#back-to-report-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+#capture-ascii-btn:hover {
+    background: #6feaa6;
+}
+
+#save-ascii-btn:hover {
+    background: #fefff6;
+    color: #e0a615;
+}
+
+#back-to-report-btn:hover {
+    background: #fefff6;
+    color: #6feaa6;
+}
