@@ -243,9 +243,9 @@ function switchToEnd() {
     <p>Total PLASTIC words formed: ${plasticWords}</p>
     <p>${getCompatibilityFeedback()}</p>
     `);
-    // Set selfie button event
-    const selfieBtn = select('#take-selfie');
-    selfieBtn.mousePressed(takeSelfie);
+    // 在switchToEnd函数中找到：
+const selfieBtn = select('#take-selfie');
+selfieBtn.mousePressed(takeSelfie); // 确保调用我们修改后的takeSelfie函数
 }
 
 // ========== audio functions ==========
