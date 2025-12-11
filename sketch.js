@@ -6,6 +6,7 @@ let plasticCounts = {P:0, L:0, A:0, S:0, T:0, I:0, C:0};
 // user variables
 let userName = {first: "", last: "", gender: ""};
 let userTendency = 0;
+let earlyChoices = [null, null, null]; // 记录前三封信的选择：'A' 或 'B'
 // texture variables
 let plasticTextures = [];
 let enterTexture;
@@ -64,21 +65,13 @@ let CharacterColors = {
   endColor: { r: 99, g: 124, b: 80 },      // #637c50
   currentColor: { r: 224, g: 166, b: 21 }, // 当前颜色
 };
+
 // WASD hint variables
-let showWASDHint = true; // set show hint initially to true
-let wasdHintAlpha = 0;   // opacity value
-let wasdHintPhase = 0;   // opacity change phase (0-1)
-let wasdHintSpeed = 0.01; // opacity change speed
-// ========== ASCII自拍系统全局变量 ==========
-let capture; // 摄像头捕获
-let asciiGraphics; // ASCII图形缓冲区
-let asciiCanvas; // ASCII画布
-let takingSelfie = false; // 是否正在拍照
-let asciiChars = []; // ASCII字符集
-let asciiDisplay; // 显示ASCII艺术的元素
-let asciiScale = 2; // ASCII字符缩放
-let asciiResolution = 8; // 分辨率（像素到字符的映射）
-let asciiBrightness = 1.0; // 亮度调整
+let showWASDHint = true; // 是否显示WASD提示
+let wasdHintAlpha = 0;   // 透明度值
+let wasdHintPhase = 0;   // 透明度变化相位 (0-1)
+let wasdHintSpeed = 0.01; // 透明度变化速度
+
 // ========== preload function ==========
 function preload() {
     //texture preload
@@ -139,21 +132,7 @@ function colorizeText(text) {
     ">${match}</span>`;
   });
 }
-// ========== 初始化ASCII字符集 ==========
-function initAsciiChars() {
-  // 从暗到亮的字符序列，创建更多灰度层次
-  asciiChars = [
-    '@', '#', '&', '%', 'W', 'M', 'B', 'E', 'R', 'N', 
-    'Q', 'g', 'm', 'w', 'q', 'p', 'd', 'b', 'k', 'h', 
-    'a', 'o', 'e', 'c', 'z', 'x', 's', 'r', 'j', 'f', 
-    't', '/', '\\', '|', '(', ')', '1', '{', '}', '[', 
-    ']', '?', '-', '_', '+', '~', '<', '>', 'i', '!', 
-    'l', 'I', ';', ':', ',', '"', '^', '`', "'", '.', ' '
-  ];
-  
-  // 反转字符数组，使暗字符对应暗像素，亮字符对应亮像素
-  asciiChars.reverse();
-}
+
 // ========== p5.js core functions ==========
 function setup() {
     //canvas setup
@@ -174,32 +153,43 @@ function setup() {
       });
     }
   });
+  // 重新测试按钮事件
+    const retakeBtn = select('#retake-test');
+    if (retakeBtn) {
+        retakeBtn.mousePressed(retakeTest);
+    }
 }
 function draw() {
-  // set background color for visualized container
+  // 设置背景色
   background(246, 245, 221); // #f6f5dd color
-  // draw shadow effect
+  
+  // 1. 绘制阴影效果（在最底层）
   drawShadowEffect();
-  // draw cover rectangle
+  
+  // 2. 绘制覆盖矩形（覆盖键盘区域，避免阴影与键盘重叠）
   drawCoverRect();
-  // draw keyboard
+  
+  // 3. 绘制键盘
   drawKeyboard(); 
-  // draw all buildings
+  
+  // 4. 绘制所有建筑
   drawAllBuildings();
-  // update and draw character
+  
+  // 5. 更新和绘制小人
   updateCharacterPosition();
   drawCharacter();
-  // draw status info
+  
+  // 6. 绘制状态信息
   drawStatusInfo();
-  // update WASD hint opacity
+  
+  // 7. 绘制WASD移动提示
   if (showWASDHint) {
-  wasdHintPhase = (wasdHintPhase + wasdHintSpeed) % 1;
-  // use sine function for smooth 0→255→0 loop
-  wasdHintAlpha = sin(wasdHintPhase * TWO_PI) * 127.5 + 127.5;
-  }
- // draw WASD movement hint
-  if (showWASDHint) {
-  drawWASDHint();
+    // 更新WASD提示透明度
+    wasdHintPhase = (wasdHintPhase + wasdHintSpeed) % 1;
+    // 使用正弦函数实现平滑的0→255→0循环
+    wasdHintAlpha = sin(wasdHintPhase * TWO_PI) * 127.5 + 127.5;
+    
+    drawWASDHint();
   }
 }
 
@@ -223,29 +213,45 @@ function switchToMain() {
     loadLetter(1);
 }
 function switchToEnd() {
-     // Hide main screen, show ending screen
-    select('#main-screen').addClass('hidden');
-    select('#end-screen').removeClass('hidden');
-    // Adjust audio for ending
-    stopBackgroundAudio();
-    setMusicVolume(0.15); // 15% volume
-    // Play completion sound
-    playCompletionSound();
-    // Show shareholder report
-    let reportContent = select('#report-content');
-    let plasticWords = Math.min(...Object.values(plasticCounts));
-    reportContent.html(`
+  // Hide main screen, show ending screen
+  select('#main-screen').addClass('hidden');
+  select('#end-screen').removeClass('hidden');
+  
+  // Adjust audio for ending
+  stopBackgroundAudio();
+  setMusicVolume(0.15); // 15% volume
+  
+  // Play completion sound
+  playCompletionSound();
+  
+  // 获取完成的轮数
+  const completedRounds = updateCompletedRounds();
+  
+  // 计算兼容性分数（只计算一次）
+  const compatibilityScore = calculateCompatibilityScore();
+  
+  // 获取兼容性反馈（传递分数避免重复计算）
+  const feedback = getCompatibilityFeedback(compatibilityScore);
+  
+  // 计算思维倾向百分比 (userTendency/50*100%)
+  const innovationPercentage = Math.min(100, Math.max(0, (userTendency / 50) * 100));
+  
+  // Show shareholder report
+  let reportContent = select('#report-content');
+  
+  reportContent.html(`
     <h2>GREENPLACE Shareholder Compatibility Report</h2>
     <p>Candidate: ${userName.first} ${userName.last}</p>
-    <p>Compatibility Score: ${calculateCompatibilityScore()}%</p>
-    <p>Your PLASTIC Contribution:</p>
+    <p>Compatibility Score: ${compatibilityScore}%</p>
+    <p>Your PLASTIC Progress:</p>
+    <p>Completed Rounds: ${completedRounds}</p>
+    <p>PLASTIC Accumulation:</p>
     <p>P: ${plasticCounts.P} | L: ${plasticCounts.L} | A: ${plasticCounts.A} | S: ${plasticCounts.S} | T: ${plasticCounts.T} | I: ${plasticCounts.I} | C: ${plasticCounts.C}</p>
-    <p>Total PLASTIC words formed: ${plasticWords}</p>
-    <p>${getCompatibilityFeedback()}</p>
-    `);
-    // 在switchToEnd函数中找到：
-const selfieBtn = select('#take-selfie');
-selfieBtn.mousePressed(takeSelfie); // 确保调用我们修改后的takeSelfie函数
+    <p>${feedback}</p>
+  `);
+  
+  // 更新圆形思维倾向进度环
+  updateCircularProgressBar(innovationPercentage);
 }
 
 // ========== audio functions ==========
@@ -491,7 +497,7 @@ function showLetter3() {
     const rawLetterText = `
         <p>Dear ${namePrefix}${userName.last},</p>
         <p>Dad passed away last month. The doctor said it was a respiratory disease caused by long-term exposure to microplastics.</p>
-        <p>I don't know what to do with this grief. Everything feels meaningless. Dad always said the paper mill was safe, and he was just dealing with wood pulp. ${userName.gender === 'male' ? 'Sir' : 'Madam'}, you also work at the paper mill, don't you? But now... I'm starting to question everything.</p>
+        <p>I don't know what to do with this grief. Everything feels meaningless. Dad always said the paper mill was safe, and he was just dealing with wood pulp.${addressSuffix} you also work at the paper mill, don't you? But now... I'm starting to question everything.</p>
         <p>Yesterday, GREENPLACE contacted me. They're offering a scholarship in Dad's name - "The Thomas Memorial Scholarship for Environmental Studies". They said it's to support the next generation and honor his legacy.</p>
         <p>But how can I accept this? The fund from the same company that might have contributed to the pollution that killed him? Yet, turning it down feels like rejecting Dad's memory. I'm so lost.</p>
         <p>What should I do?</p>
@@ -515,6 +521,22 @@ function showLetter3() {
         loadOption(3, 'B');
     });
 }
+// ========== 判断是否进入Version B分支 ==========
+function shouldShowVersionB() {
+  // 统计前三封信中选择B的次数
+  let bCount = 0;
+  for (let i = 0; i < 3; i++) {
+    if (earlyChoices[i] === 'B') {
+      bCount++;
+    }
+  }
+  
+  // 如果选择了2个或更多B选项，进入Version B分支
+  // 即：userTendency >= 20（因为每个B加10分，2个B就是20分）
+  const showVersionB = bCount >= 2;
+  console.log(`Early choices: ${JSON.stringify(earlyChoices)}, B count: ${bCount}, Show Version B: ${showVersionB}`);
+  return showVersionB;
+}
 // letter4 (2025, 25)
 function showLetter4() {
     let letterContent = select('#letter-content');
@@ -525,7 +547,8 @@ function showLetter4() {
     
     // determine letter version based on user tendency
     let rawLetterText = '';
-    if (userTendency < 0) {
+    if (!shouldShowVersionB()) {
+    // Version A (前三封信选择了少于2个B)
         // Version A 
         rawLetterText = `
             <p>Dear ${namePrefix}${userName.last},</p>
@@ -574,7 +597,8 @@ function showLetter5() {
     
     // determine letter version based on user tendency
     let rawLetterText = '';
-    if (userTendency < 0) {
+    if (!shouldShowVersionB()) {
+    // Version A (前三封信选择了少于2个B)
         // Version A 
         rawLetterText = `
             <p>Dear ${namePrefix}${userName.last},</p>
@@ -624,7 +648,8 @@ function showLetter6() {
     
     // determine letter version based on user tendency
     let rawLetterText = '';
-    if (userTendency < 0) {
+    if (!shouldShowVersionB()) {
+    // Version A (前三封信选择了少于2个B)
         // Version A 
         rawLetterText = `
             <p>${namePrefix}${userName.last},</p>
@@ -820,32 +845,24 @@ function updatePlasticCounts(option, letterNum) {
 }
 // update user tendency based on option and letter number
 function updateUserTendency(option, letterNum) {
-    // Update user tendency based on option
-    // Negative values indicate tendency towards true environmentalism
-    // positive values indicate tendency towards technological solutions
-    switch(letterNum) {
-        case 1:
-            if (option === 'A') userTendency -= 1; // tendency towards true environmentalism
-            if (option === 'B') userTendency += 1; // tendency towards technological solutions
-            break;
-        case 2:
-            if (option === 'A') userTendency -= 1;
-            if (option === 'B') userTendency += 1;
-            break;
-        case 3:
-            if (option === 'A') userTendency -= 1;
-            if (option === 'B') userTendency += 1;
-            break;
-        case 4:
-            if (option === 'A') userTendency -= 1;
-            if (option === 'B') userTendency += 1;
-            break;
-        case 5:
-            if (option === 'A') userTendency -= 1;
-            if (option === 'B') userTendency += 1;
-            break;
-    }
-    console.log("User tendency:", userTendency);
+  // Update user tendency based on option
+  // 新规则：每封信选择optionA加0分，选择optionB加10分
+  // userTendency将变为[0, 50]之间的整数（5封信×10分）
+  
+  if (option === 'A') {
+    userTendency += 0; // 选择A不加分
+  } else if (option === 'B') {
+    userTendency += 10; // 选择B加10分
+  }
+  
+  // 记录前三封信的选择
+  if (letterNum >= 1 && letterNum <= 3) {
+    earlyChoices[letterNum - 1] = option; // 记录选择
+    console.log(`Early choice for letter ${letterNum}: ${option}`);
+  }
+  
+  console.log("User tendency updated:", userTendency);
+  console.log("Early choices:", earlyChoices);
 }
 // update completed rounds based on plastic counts
 function updateCompletedRounds() {
@@ -868,395 +885,130 @@ function updateCurrentRoundCharacters() {
   });
   return collectedCount;
 }
-
-///////////////////////////////////
+// end functions
 function calculateCompatibilityScore() {
-    // 基于用户倾向和PLASTIC计数计算兼容性分数
-    let baseScore = 50;
-    
-    // 用户倾向影响 (最多±30分)
-    let tendencyScore = userTendency * 10;
-    tendencyScore = Math.max(-30, Math.min(30, tendencyScore));
-    
-    // PLASTIC单词数量影响 (最多±20分)
-    let plasticScore = Math.min(...Object.values(plasticCounts)) * 5;
-    plasticScore = Math.min(20, plasticScore);
-    
-    return baseScore + tendencyScore + plasticScore;
+  // 新的兼容性分数计算方法
+  // baseScore = 50;
+  // tendencyScore = userTendency * 1; // 因为userTendency现在范围是0-50
+  // plasticScore = 完成的轮数 * 1 (每完成一轮加1分)
+  
+  const baseScore = 50;
+  
+  // tendencyScore: userTendency范围是0-50，乘以1得到0-50分
+  const tendencyScore = userTendency * 1;
+  
+  // plasticScore: 基于完成的轮数，每完成一轮加1分
+  const completedRounds = updateCompletedRounds();
+  const plasticScore = completedRounds * 1;
+  
+  // 计算总分
+  let totalScore = baseScore + tendencyScore + plasticScore;
+  
+  // 特别的：如果TotalScore > 100，则CompatibilityScore为99
+  // 否则CompatibilityScore = TotalScore
+  let compatibilityScore;
+  if (totalScore > 100) {
+    compatibilityScore = 99;
+  } else {
+    compatibilityScore = Math.floor(totalScore); // 取整数
+  }
+  
+  console.log(`兼容性分数计算:
+    baseScore: ${baseScore}
+    tendencyScore: ${tendencyScore} (userTendency: ${userTendency})
+    plasticScore: ${plasticScore} (completedRounds: ${completedRounds})
+    totalScore: ${totalScore}
+    finalScore: ${compatibilityScore}`);
+  
+  return compatibilityScore;
 }
-function getCompatibilityFeedback() {
-    if (userTendency >= 2) {
-        return "Your strategic thinking aligns perfectly with GREENPLACE's vision for a sustainable future. You understand that progress requires pragmatic solutions.";
-    } else if (userTendency <= -2) {
-        return "While your environmental concerns are noted, true progress requires embracing innovative solutions. We recommend further alignment with GREENPLACE's core values.";
+// ========== 更新圆形思维倾向进度环 ==========
+function updateCircularProgressBar(innovationPercentage) {
+  // 确保创新百分比在0-100之间
+  const innovationPct = Math.min(100, Math.max(0, innovationPercentage));
+  
+  // 计算传统百分比
+  const traditionPct = 100 - innovationPct;
+  
+  // 圆环周长公式：2 * π * r = 2 * π * 45 ≈ 282.74
+  // 为了精确，我们使用实际计算值
+  const radius = 45;
+  const circumference = 2 * Math.PI * radius;
+  
+  // 计算圆弧的dasharray值
+  // stroke-dasharray格式："绘制长度 空白长度"
+  // 创新部分的绘制长度 = 周长 * (创新百分比/100)
+  // 空白长度 = 周长 - 绘制长度
+  const dashLength = circumference * (innovationPct / 100);
+  const gapLength = circumference - dashLength;
+  
+  // 更新SVG圆弧的stroke-dasharray
+  const foregroundCircle = select('.circular-fg');
+  if (foregroundCircle) {
+    // 设置stroke-dasharray: "绘制长度 空白长度"
+    // 这将从12点钟方向开始绘制，所以我们用transform="rotate(-90 50 50)"将其旋转到3点钟方向
+    foregroundCircle.elt.style.strokeDasharray = `${dashLength} ${gapLength}`;
+  }
+  
+  // 更新中心百分比显示
+  const progressPercentage = select('#circular-progress-percentage');
+  if (progressPercentage) {
+    progressPercentage.html(`${Math.round(innovationPct)}%`);
+  }
+  
+  // 更新标签加粗状态
+  const traditionLabel = select('#tradition-label');
+  const innovationLabel = select('#innovation-label');
+  
+  if (traditionLabel && innovationLabel) {
+    // 先移除所有加粗
+    traditionLabel.removeClass('bold');
+    innovationLabel.removeClass('bold');
+    
+    // 根据哪个占比大来加粗对应的标签
+    if (traditionPct > innovationPct) {
+      traditionLabel.addClass('bold');
+    } else if (innovationPct > traditionPct) {
+      innovationLabel.addClass('bold');
     } else {
-        return "You demonstrate balanced thinking. With proper guidance, you can become a valuable asset to GREENPLACE's mission.";
+      // 如果相等，都不加粗
+    }
+  }
+  
+  console.log(`圆形思维倾向进度环更新:
+    创新比例: ${innovationPct}% (dashLength: ${dashLength.toFixed(2)})
+    传统比例: ${traditionPct}%
+    圆环周长: ${circumference.toFixed(2)}
+    stroke-dasharray: ${dashLength.toFixed(2)} ${gapLength.toFixed(2)}
+    userTendency: ${userTendency}`);
+}
+function getCompatibilityFeedback(compatibilityScore) {
+    // 如果没有传入分数，则计算一次（保持向后兼容）
+    if (compatibilityScore === undefined) {
+        compatibilityScore = calculateCompatibilityScore();
+    }
+    
+    console.log(`兼容性反馈 - 分数: ${compatibilityScore}`);
+    if (compatibilityScore < 60) {
+        console.log("反馈类别: 刻薄评价");
+        return "Your choices have demonstrated a conservative perspective. We understand that everyone has their own unique background and experiences. However, to keep up with times, perhaps you could consider being more open to changes.";
+    } else if (compatibilityScore < 80) {
+        console.log("反馈类别: 鼓励评价");
+        return "Your choices have demonstrated balanced thinking. We value your insights and are committed to making meaningful improvements. Every perspective contributes a lot to our growth. Feel free to share your contact information if you'd like to stay connected.";
+    } else if (compatibilityScore < 99) {
+        console.log("反馈类别: 邀请合作");
+        return "Your thinking aligns perfectly with GREENPLACE's vision for a sustainable future! We sincerely invite you to join our team and collaborate with us to create meaningful impact.";
+    } else {
+        console.log("反馈类别: 极高评价与警示");
+        return "Your thinking aligns perfectly with ours at the deepest level. We extend a special invitation for you to join our core leadership team... However, please remember that to achieve substantial long-term benefits, sometimes strategic compromises may be necessary.";
     }
 }
 function playCompletionSound() {
     console.log("Completion sound played");
 }
-// ========== 修改现有的takeSelfie函数 ==========
-function takeSelfie() {
-  console.log("Taking ASCII selfie...");
-  
-  // 隐藏结局界面，显示ASCII相机界面
-  select('#end-screen').addClass('hidden');
-  
-  // 创建ASCII相机界面
-  createAsciiCameraUI();
-  
-  // 初始化摄像头
-  initCamera();
-}
-// ========== 创建ASCII相机界面 ==========
-function createAsciiCameraUI() {
-  // 创建相机容器
-  const cameraContainer = createDiv('');
-  cameraContainer.id('ascii-camera-container');
-  cameraContainer.style(`
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: linear-gradient(135deg, #7ebc88, #cad4af);
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-  `);
-  cameraContainer.parent('main-screen');
-  
-  // 创建标题
-  const title = createElement('h2', 'GREENPEACE Shareholder Portrait');
-  title.parent('#ascii-camera-container');
-  title.style(`
-    color: #fefff6;
-    font-family: 'Courier New', monospace;
-    margin-bottom: 30px;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-  `);
-  
-  // 创建预览容器
-  const previewContainer = createDiv('');
-  previewContainer.id('ascii-preview-container');
-  previewContainer.style(`
-    position: relative;
-    background: #f6f5dd;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-    margin-bottom: 30px;
-  `);
-  previewContainer.parent('#ascii-camera-container');
-  
-  // 创建ASCII画布容器
-  const canvasContainer = createDiv('');
-  canvasContainer.id('ascii-canvas-container');
-  canvasContainer.style(`
-    overflow: auto;
-    max-height: 60vh;
-    border: 2px solid #7ebc88;
-    background: #000;
-  `);
-  canvasContainer.parent('#ascii-preview-container');
-  
-  // 创建控制面板
-  const controls = createDiv('');
-  controls.id('ascii-controls');
-  controls.style(`
-    display: flex;
-    gap: 15px;
-    margin-bottom: 20px;
-  `);
-  controls.parent('#ascii-camera-container');
-  
-  // 创建捕获按钮
-  const captureBtn = createButton('CAPTURE ASCII PORTRAIT');
-  captureBtn.id('capture-ascii-btn');
-  captureBtn.style(`
-    padding: 15px 30px;
-    background: #7ebc88;
-    color: #fefff6;
-    border: none;
-    border-radius: 4px;
-    font-family: 'Courier New', monospace;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  `);
-  captureBtn.parent('#ascii-controls');
-  captureBtn.mousePressed(captureAsciiSelfie);
-  
-  // 创建保存按钮
-  const saveBtn = createButton('SAVE PORTRAIT');
-  saveBtn.id('save-ascii-btn');
-  saveBtn.style(`
-    padding: 15px 30px;
-    background: #e0a615;
-    color: #fefff6;
-    border: none;
-    border-radius: 4px;
-    font-family: 'Courier New', monospace;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  `);
-  saveBtn.parent('#ascii-controls');
-  saveBtn.mousePressed(saveAsciiArt);
-  
-  // 创建返回按钮
-  const backBtn = createButton('RETURN TO REPORT');
-  backBtn.id('back-to-report-btn');
-  backBtn.style(`
-    padding: 15px 30px;
-    background: #6feaa6;
-    color: #fefff6;
-    border: none;
-    border-radius: 4px;
-    font-family: 'Courier New', monospace;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  `);
-  backBtn.parent('#ascii-controls');
-  backBtn.mousePressed(backToReport);
-  
-  // 创建提示文本
-  const hint = createElement('p', 'Allow camera access when prompted. Your portrait will be converted to ASCII art.');
-  hint.style(`
-    color: #fefff6;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-    max-width: 600px;
-    text-align: center;
-    margin-top: 20px;
-    opacity: 0.8;
-  `);
-  hint.parent('#ascii-camera-container');
-}
-
-// ========== 初始化摄像头 ==========
-function initCamera() {
-  // 初始化ASCII字符集
-  initAsciiChars();
-  
-  // 检查浏览器是否支持getUserMedia
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    console.error("Camera not supported");
-    alert("Your browser does not support camera access. Please use Chrome, Firefox, or Edge.");
-    return;
-  }
-  
-  // 请求摄像头权限
-  capture = createCapture(VIDEO, () => {
-    console.log("Camera access granted");
-    capture.size(320, 240); // 设置摄像头尺寸
-    capture.hide(); // 隐藏原始视频元素
-    
-    // 创建ASCII图形缓冲区
-    asciiGraphics = createGraphics(640, 480);
-    
-    // 开始绘制ASCII预览
-    takingSelfie = true;
-  });
-  
-  capture.onError = (err) => {
-    console.error("Camera error:", err);
-    alert("Failed to access camera. Please check permissions and try again.");
-  };
-}
-// ========== 捕获并渲染ASCII自拍 ==========
-function captureAsciiSelfie() {
-  if (!capture) {
-    alert("Camera not ready. Please wait...");
-    return;
-  }
-  
-  console.log("Capturing ASCII selfie...");
-  
-  // 获取视频帧
-  capture.loadPixels();
-  
-  if (!capture.pixels || capture.pixels.length === 0) {
-    alert("No video frame available. Please try again.");
-    return;
-  }
-  
-  // 清空画布容器
-  select('#ascii-canvas-container').html('');
-  
-  // 创建预格式化文本元素
-  asciiDisplay = createElement('pre', '');
-  asciiDisplay.id('ascii-display');
-  asciiDisplay.style(`
-    margin: 0;
-    padding: 10px;
-    font-family: 'Courier New', monospace;
-    font-size: ${asciiScale * 8}px;
-    line-height: ${asciiScale * 8}px;
-    letter-spacing: ${asciiScale * 0.5}px;
-    color: #6feaa6;
-    background: #000;
-    text-align: center;
-    white-space: pre;
-  `);
-  asciiDisplay.parent('#ascii-canvas-container');
-  
-  // 生成ASCII艺术
-  generateAsciiArt();
-}
-
-// ========== 生成ASCII艺术 ==========
-function generateAsciiArt() {
-  if (!capture) return;
-  
-  let asciiArt = '';
-  const captureWidth = capture.width;
-  const captureHeight = capture.height;
-  
-  // 计算字符网格
-  const gridWidth = Math.floor(captureWidth / asciiResolution);
-  const gridHeight = Math.floor(captureHeight / asciiResolution);
-  
-  // 遍历网格
-  for (let gridY = 0; gridY < gridHeight; gridY++) {
-    for (let gridX = 0; gridX < gridWidth; gridX++) {
-      // 计算当前网格对应的像素位置
-      const pixelX = Math.floor(gridX * asciiResolution + asciiResolution / 2);
-      const pixelY = Math.floor(gridY * asciiResolution + asciiResolution / 2);
-      
-      // 确保不越界
-      if (pixelX >= 0 && pixelX < captureWidth && pixelY >= 0 && pixelY < captureHeight) {
-        // 获取像素索引
-        const idx = (pixelY * captureWidth + pixelX) * 4;
-        
-        // 获取RGB值
-        const r = capture.pixels[idx];
-        const g = capture.pixels[idx + 1];
-        const b = capture.pixels[idx + 2];
-        
-        // 计算灰度值（使用心理学公式）
-        let gray = 0.299 * r + 0.587 * g + 0.114 * b;
-        
-        // 应用亮度调整
-        gray *= asciiBrightness;
-        gray = constrain(gray, 0, 255);
-        
-        // 将灰度映射到字符索引
-        const charIndex = Math.floor(map(gray, 0, 255, 0, asciiChars.length - 1));
-        const char = asciiChars[charIndex];
-        
-        // 添加到ASCII艺术字符串
-        asciiArt += char;
-      } else {
-        // 越界时添加空格
-        asciiArt += ' ';
-      }
-    }
-    // 每行结束添加换行符
-    asciiArt += '\n';
-  }
-  
-  // 添加GREENPEACE水印
-  asciiArt += '\n\n';
-  asciiArt += 'GREENPEACE SHAREHOLDER PORTRAIT\n';
-  asciiArt += `${userName.first} ${userName.last}\n`;
-  asciiArt += `PLASTIC SCORE: ${calculateCompatibilityScore()}%\n`;
-  asciiArt += 'PLASTIC UTTERANCE: ' + Math.min(...Object.values(plasticCounts));
-  
-  // 更新显示
-  asciiDisplay.html(asciiArt);
-  
-  // 存储ASCII艺术供保存使用
-  window.asciiArtText = asciiArt;
-}
-
-// ========== 保存ASCII艺术 ==========
-function saveAsciiArt() {
-  if (!window.asciiArtText) {
-    alert("No ASCII art to save. Please capture a portrait first.");
-    return;
-  }
-  
-  // 创建文件名
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const filename = `GREENPEACE_${userName.first}_${userName.last}_${timestamp}.txt`;
-  
-  // 创建Blob并下载
-  const blob = new Blob([window.asciiArtText], { type: 'text/plain' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  link.click();
-  
-  console.log("ASCII art saved:", filename);
-  
-  // 显示保存成功消息
-  const savedMsg = createElement('p', 'Portrait saved successfully!');
-  savedMsg.style(`
-    color: #6feaa6;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-    margin-top: 10px;
-  `);
-  savedMsg.parent('#ascii-camera-container');
-  
-  // 3秒后移除消息
-  setTimeout(() => {
-    savedMsg.remove();
-  }, 3000);
-}
-
-// ========== 返回报告界面 ==========
-function backToReport() {
-  // 停止摄像头
-  if (capture) {
-    capture.stop();
-    capture = null;
-  }
-  
-  // 移除相机界面
-  const cameraContainer = select('#ascii-camera-container');
-  if (cameraContainer) {
-    cameraContainer.remove();
-  }
-  
-  // 显示结局界面
-  select('#end-screen').removeClass('hidden');
-}
-
 //////////////////////////////////
 
 // ========== keyboard functions ==========
-function drawCoverRect() {
-  push();
-  
-  // 计算键盘的基本参数（与drawKeyboard中相同的计算方式）
-  const keyboardWidth = width / 6;
-  const keyboardHeight = height / 2;
-  const cellSize = keyboardWidth / 3;
-  const keyboardX = (width / 8) - (keyboardWidth / 2);
-  const keyboardY = (height * 0.4) - (keyboardHeight / 2);
-  const padding = 4; // 键盘内键间隔
-  
-  // 矩形宽度：从画布最左侧到键盘右侧加上一个键盘内部键的间隔
-  const rectRight = keyboardX + keyboardWidth + 3*padding;
-  
-  // 设置矩形样式
-  noStroke();
-  fill(246, 245, 221); // 与背景相同的颜色 #f6f5dd
-  
-  // 绘制矩形：覆盖从画布左侧到键盘右侧+padding的区域，高度为整个画布
-  rect(0, 0, rectRight, height);
-  
-  pop();
-}
 function drawKeyboard() {
   // calculate keyboard dimensions
   const keyboardWidth = width / 6;   // Total width: 1/6
@@ -1334,7 +1086,6 @@ function drawKeyBase(x, y, w, h, keyLetter) {
     // Enter键的特殊颜色
     const completedRounds = updateCompletedRounds();
     const intensity = Math.min(1, completedRounds / 6);
-    // ========== 修改：从#fefff6渐变到#7ebc88 ==========
     // #fefff6 (RGB: 254, 255, 246) → #7ebc88 (RGB: 126, 188, 136)
     
     // 计算渐变颜色
@@ -1410,7 +1161,7 @@ function drawKeyBase(x, y, w, h, keyLetter) {
     ellipse(x + w/2, y + h/2, w * 0.6, h * 0.6);
     
     // 添加微弱的发光效果
-    drawingContext.shadowColor = 'rgba(224, 166, 21, 1)';// #e0a615ff color
+    drawingContext.shadowColor = 'rgba(224, 166, 21, 1)';// #e0a615ff颜色
     drawingContext.shadowBlur = 10;
     ellipse(x + w/2, y + h/2, w * 0.55, h * 0.55);
     drawingContext.shadowBlur = 0;
@@ -1531,32 +1282,36 @@ function singleBuildingPattern(building) {
   const { x, y, initWidth, initHeight, buildingHeight, color, strokeColor } = building;
   const rectY = y - buildingHeight;
   const topEllipseY = rectY;
+  
   push();
-  // draw monitor effect
-  drawMonitorEffect(building);
-  // buttom ellipse
-  stroke(strokeColor);
-  strokeWeight(0.5);
-  fill(color);
-  ellipse(x, y, initWidth, initHeight);
-  // draw glow ball
+  
+  // ========== 1. 绘制光球 ==========
   const glowBallDiameter = buildingHeight;
   const glowBallCenterY = y - buildingHeight / 2; 
-  // use radial gradient to achieve opacity decreasing from center to outside
+  
   const gradient = drawingContext.createRadialGradient(
-    x, glowBallCenterY, 0,                    // inner circle center and radius
-    x, glowBallCenterY, glowBallDiameter/2,   // outer circle center and radius
+    x, glowBallCenterY, 0,
+    x, glowBallCenterY, glowBallDiameter/2,
   );
-  // center color: #cad4af, opacity 100%
+  
   const centerColor = `rgba(202, 212, 175, 1)`;
-  // edge color: #cad4af, opacity 30%
   const edgeColor = `rgba(202, 212, 175, 0)`;
   gradient.addColorStop(0, centerColor);
   gradient.addColorStop(1, edgeColor);
   drawingContext.fillStyle = gradient;
   noStroke();
   ellipse(x, glowBallCenterY, glowBallDiameter, glowBallDiameter);
-
+  
+  // ========== 2. 绘制追踪三角形（在光球上方，建筑下方） ==========
+  drawMonitorEffect(building);
+  
+  // ========== 3. 绘制建筑 ==========
+  // buttom ellipse
+  stroke(strokeColor);
+  strokeWeight(0.5);
+  fill(color);
+  ellipse(x, y, initWidth, initHeight);
+  
   // middle rect
   noStroke();
   fill(red(color), green(color), blue(color), alpha(color) * 0.8);
@@ -1566,294 +1321,19 @@ function singleBuildingPattern(building) {
   vertex(x + initWidth/2, rectY);
   vertex(x - initWidth/2, rectY);
   endShape(CLOSE);
+  
   // upper ellipse
   stroke(strokeColor);
   strokeWeight(0.5);
   fill(color);
   ellipse(x, topEllipseY, initWidth, initHeight);
+  
   // lines
-  stroke (strokeColor);
+  stroke(strokeColor);
   strokeWeight(0.3);
   line(x - initWidth/2, y, x - initWidth/2, rectY);
   line(x + initWidth/2, y, x + initWidth/2, rectY);
 
-  pop();
-}
-// draw monitor effect
-function drawMonitorEffect(building) {
-  // 获取建筑信息
-  const { x: buildingX, y: buildingY, initWidth, initHeight, color: buildingColor } = building;
-  
-  // 获取小人底边中点坐标
-  const characterX = character.x;
-  const characterY = character.y;
-  
-  // 使用椭圆左右端点作为近似切点（简化版本）
-  const leftPointX = buildingX - initWidth/2;
-  const leftPointY = buildingY;
-  const rightPointX = buildingX + initWidth/2;
-  const rightPointY = buildingY;
-  
-  // 绘制三角形
-  push();
-  noStroke();
-  
-  // 计算径向渐变的参数
-  const centerX = characterX;
-  const centerY = characterY;
-  
-  // 计算到两个端点的距离
-  const distLeft = dist(centerX, centerY, leftPointX, leftPointY);
-  const distRight = dist(centerX, centerY, rightPointX, rightPointY);
-  const maxDist = max(distLeft, distRight);
-  
-  // 创建径向渐变
-  const gradient = drawingContext.createRadialGradient(
-    centerX, centerY, 0,
-    centerX, centerY, maxDist
-  );
-  
-  // 获取建筑底部椭圆的颜色和透明度
-  const buildingAlpha = alpha(buildingColor);
-  const buildingRed = red(buildingColor);
-  const buildingGreen = green(buildingColor);
-  const buildingBlue = blue(buildingColor);
-  
-  // 顶点颜色修改为：#f6f5dd，透明度50%
-  const vertexColor = `rgba(246, 245, 221, 0.5)`;
-  // 底边颜色：建筑底部椭圆的颜色和透明度
-  const baseColor = `rgba(${buildingRed}, ${buildingGreen}, ${buildingBlue}, ${buildingAlpha})`;
-  
-  // 设置渐变颜色
-  gradient.addColorStop(0, vertexColor);
-  gradient.addColorStop(1, baseColor);
-  
-  // 应用渐变
-  drawingContext.fillStyle = gradient;
-  
-  // 绘制三角形
-  beginShape();
-  vertex(characterX, characterY);    // 顶点：小人底边中点
-  vertex(leftPointX, leftPointY);    // 左端点
-  vertex(rightPointX, rightPointY);  // 右端点
-  endShape(CLOSE);
-  
-  pop();
-}
-// draw shadow effect
-function drawShadowEffect() {
-  // 获取小人底边中点坐标
-  const characterX = character.x;
-  const characterY = character.y;
-  
-  // 获取画布边界
-  const canvasLeft = 0;
-  const canvasRight = width;
-  const canvasTop = 0;
-  const canvasBottom = height;
-  
-  // 我们需要为每个建筑计算阴影，所以需要遍历所有建筑
-  for (let i = 0; i < buildings.length; i++) {
-    const building = buildings[i];
-    const { x: buildingX, y: buildingY, initWidth, initHeight } = building;
-    
-    // 获取建筑底部椭圆的左右端点
-    const leftPointX = buildingX - initWidth/2;
-    const leftPointY = buildingY;
-    const rightPointX = buildingX + initWidth/2;
-    const rightPointY = buildingY;
-    
-    // 修改射线方向：从建筑端点出发，经过小人底边中点，继续延伸
-    const ray1 = calculateRayIntersection(
-      leftPointX, leftPointY,  // 起点：建筑左端点
-      characterX, characterY,  // 经过点：小人底边中点
-      canvasLeft, canvasRight, canvasTop, canvasBottom
-    );
-    
-    const ray2 = calculateRayIntersection(
-      rightPointX, rightPointY,  // 起点：建筑右端点
-      characterX, characterY,    // 经过点：小人底边中点
-      canvasLeft, canvasRight, canvasTop, canvasBottom
-    );
-    
-    if (ray1.intersection && ray2.intersection) {
-      // 获取两个交点
-      const point1 = ray1.intersection;
-      const point2 = ray2.intersection;
-      
-      // 绘制阴影三角形
-      drawShadowTriangle(characterX, characterY, point1, point2, building);
-    }
-  }
-}
-// 计算射线与画布边界的交点
-function calculateRayIntersection(startX, startY, throughX, throughY, left, right, top, bottom) {
-  // 射线方向向量：从起点（建筑端点）指向经过点（小人底边中点）
-  // 然后继续沿同一方向延伸
-  const dx = throughX - startX;
-  const dy = throughY - startY;
-  
-  // 如果dx和dy都为0，说明起点和经过点重合，无法确定方向
-  if (dx === 0 && dy === 0) return { intersection: null, t: Infinity };
-  
-  // 计算与四条边界的交点参数t（t > 0 表示沿方向向量延伸）
-  let tValues = [];
-  let intersectionPoints = [];
-  
-  // 与左边界相交 (x = left)
-  if (dx !== 0) {
-    const t = (left - startX) / dx;
-    if (t > 0) {
-      const y = startY + t * dy;
-      if (y >= top && y <= bottom) {
-        tValues.push(t);
-        intersectionPoints.push({ x: left, y: y, edge: 'left' });
-      }
-    }
-  }
-  
-  // 与右边界相交 (x = right)
-  if (dx !== 0) {
-    const t = (right - startX) / dx;
-    if (t > 0) {
-      const y = startY + t * dy;
-      if (y >= top && y <= bottom) {
-        tValues.push(t);
-        intersectionPoints.push({ x: right, y: y, edge: 'right' });
-      }
-    }
-  }
-  
-  // 与上边界相交 (y = top)
-  if (dy !== 0) {
-    const t = (top - startY) / dy;
-    if (t > 0) {
-      const x = startX + t * dx;
-      if (x >= left && x <= right) {
-        tValues.push(t);
-        intersectionPoints.push({ x: x, y: top, edge: 'top' });
-      }
-    }
-  }
-  
-  // 与下边界相交 (y = bottom)
-  if (dy !== 0) {
-    const t = (bottom - startY) / dy;
-    if (t > 0) {
-      const x = startX + t * dx;
-      if (x >= left && x <= right) {
-        tValues.push(t);
-        intersectionPoints.push({ x: x, y: bottom, edge: 'bottom' });
-      }
-    }
-  }
-  
-  // 找到最小的正t值（最近的交点）
-  if (tValues.length > 0) {
-    let minT = Infinity;
-    let minIndex = -1;
-    
-    for (let i = 0; i < tValues.length; i++) {
-      if (tValues[i] < minT && tValues[i] > 0.1) { // t > 0.1 确保不会选择离起点太近的交点
-        minT = tValues[i];
-        minIndex = i;
-      }
-    }
-    
-    if (minIndex !== -1) {
-      return {
-        intersection: intersectionPoints[minIndex],
-        t: minT
-      };
-    }
-  }
-  
-  return { intersection: null, t: Infinity };
-}
-// 绘制阴影三角形（或多边形）
-function drawShadowTriangle(centerX, centerY, point1, point2, building) {
-  push();
-  noStroke();
-  
-  // 检查两个交点是否在同一边上
-  const sameEdge = point1.edge === point2.edge;
-  
-  // 收集所有顶点
-  let allVertices = [];  // 将变量名从vertices改为allVertices
-  
-  if (sameEdge) {
-    // 如果两个交点在同一个边上，直接连接三个点形成三角形
-    allVertices = [
-      { x: centerX, y: centerY },  // 顶点：小人底边中点
-      { x: point1.x, y: point1.y }, // 交点1
-      { x: point2.x, y: point2.y }  // 交点2
-    ];
-  } else {
-    // 如果两个交点在不同的边上，需要添加画布角点
-    // 找到距离两个交点最近的画布角点
-    const corners = [
-      { x: 0, y: 0 },           // 左上
-      { x: width, y: 0 },       // 右上
-      { x: width, y: height },  // 右下
-      { x: 0, y: height }       // 左下
-    ];
-    
-    // 计算每个角点到两个交点的距离之和
-    let minDistance = Infinity;
-    let nearestCorner = corners[0];
-    
-    for (const corner of corners) {
-      const dist1 = dist(corner.x, corner.y, point1.x, point1.y);
-      const dist2 = dist(corner.x, corner.y, point2.x, point2.y);
-      const totalDist = dist1 + dist2;
-      
-      if (totalDist < minDistance) {
-        minDistance = totalDist;
-        nearestCorner = corner;
-      }
-    }
-    
-    // 确定顶点的顺序（顺时针或逆时针）
-    // 我们按照顺时针顺序：中心点 -> 交点1 -> 角点 -> 交点2
-    allVertices = [
-      { x: centerX, y: centerY },  // 顶点：小人底边中点
-      { x: point1.x, y: point1.y }, // 交点1
-      { x: nearestCorner.x, y: nearestCorner.y }, // 最近的画布角点
-      { x: point2.x, y: point2.y }  // 交点2
-    ];
-  }
-  
-  // 计算所有顶点到中心点的距离，找到最远距离
-  let maxDist = 0;
-  for (const v of allVertices) {  // 改为使用v而不是vertex
-    const d = dist(centerX, centerY, v.x, v.y);
-    if (d > maxDist) maxDist = d;
-  }
-  
-  // 创建径向渐变
-  const gradient = drawingContext.createRadialGradient(
-    centerX, centerY, 0,           // 内圆圆心和半径
-    centerX, centerY, maxDist      // 外圆圆心和半径
-  );
-  
-  // 顶点颜色：#f6f5dd，透明度0
-  const vertexColor = `rgba(246, 245, 221, 0)`;
-  // 边缘颜色：#e0a615，透明度30%
-  const edgeColor = `rgba(224, 166, 21, 0.3)`;
-  
-  gradient.addColorStop(0, vertexColor);
-  gradient.addColorStop(1, edgeColor);
-  
-  // 应用渐变
-  drawingContext.fillStyle = gradient;
-  
-  // 绘制多边形
-  beginShape();
-  for (const v of allVertices) {  // 改为使用v而不是vertex
-    vertex(v.x, v.y);
-  }
-  endShape(CLOSE);
-  
   pop();
 }
 // create new building
@@ -1930,11 +1410,13 @@ function initCharacter() {
     g: CharacterColors.startColor.g, 
     b: CharacterColors.startColor.b 
   };
-  console.log("successfully initialized character:");
-  // initialize keyboard hint
+  
+  // 初始化WASD提示相关变量
   showWASDHint = true;
   wasdHintAlpha = 0;
   wasdHintPhase = 0;
+  
+  console.log("successfully initialized character:");
 }
 // update character color based on current letter
 function updateCharacterColor() {
@@ -2047,27 +1529,45 @@ function drawHead() {
   strokeWeight(0.5);
   ellipse(x, headCenterY, headDiameter, headDiameter);
 }
-// update character position
+// ========== 按键释放事件函数 ==========
+function keyReleased() {
+  // 这里可以留空，或者只用于其他非移动功能
+  // 移动按键的状态检测已转移到 keyIsDown()
+}
+// ========== 更新角色位置函数 ==========
 function updateCharacterPosition() {
-  const { keysPressed, moveSpeed } = character;
-  // calculate direction
+  // 使用 keyIsDown() 直接检测当前按键状态，避免事件处理问题
+  const isUpPressed = keyIsDown(87);    // W key code: 87
+  const isDownPressed = keyIsDown(83);  // S key code: 83
+  const isLeftPressed = keyIsDown(65);  // A key code: 65
+  const isRightPressed = keyIsDown(68); // D key code: 68
+  
+  // 如果检测到WASD键被按下，隐藏WASD提示
+  if ((isUpPressed || isDownPressed || isLeftPressed || isRightPressed) && showWASDHint) {
+    showWASDHint = false;
+  }
+  
+  // 计算方向
   let dx = 0;
   let dy = 0;
-  // update position based on direction
-  if (keysPressed.w) dy -= moveSpeed; // up
-  if (keysPressed.s) dy += moveSpeed; // down
-  if (keysPressed.a) dx -= moveSpeed; // left
-  if (keysPressed.d) dx += moveSpeed; // right
-  // keep speed consistent when moving diagonally
+  
+  // 更新位置基于当前按键状态
+  if (isUpPressed) dy -= character.moveSpeed;    // 上
+  if (isDownPressed) dy += character.moveSpeed;  // 下
+  if (isLeftPressed) dx -= character.moveSpeed;  // 左
+  if (isRightPressed) dx += character.moveSpeed; // 右
+  
+  // 保持对角线移动速度一致
   if (dx !== 0 && dy !== 0) {
     dx *= 1/Math.sqrt(2); // 1/√2
     dy *= 1/Math.sqrt(2);
   }
-  // update position only if any key is pressed
+  
+  // 更新位置
   if (dx !== 0 || dy !== 0) {
     character.x += dx;
     character.y += dy;
-    // constrain position
+    // 限制位置
     constrainCharacterPosition();
   }
 }
@@ -2085,83 +1585,44 @@ function constrainCharacterPosition() {
   character.y = constrain(y, minY, maxY);
 }
 
-// key pressed events
-function keyPressed() {
-  // turn key to lowercase
-  const keyChar = key.toLowerCase();
-  // set key pressed state to true and hide WASD hint
-  if (keyChar === 'w') {
-    character.keysPressed.w = true;
-    if (showWASDHint) {
-      showWASDHint = false;
-      console.log("W key pressed - hiding WASD hint");
-    }
-  } else if (keyChar === 'a') {
-    character.keysPressed.a = true;
-    if (showWASDHint) {
-      showWASDHint = false;
-      console.log("A key pressed - hiding WASD hint");
-    }
-  } else if (keyChar === 's') {
-    character.keysPressed.s = true;
-    if (showWASDHint) {
-      showWASDHint = false;
-      console.log("S key pressed - hiding WASD hint");
-    }
-  } else if (keyChar === 'd') {
-    character.keysPressed.d = true;
-    if (showWASDHint) {
-      showWASDHint = false;
-      console.log("D key pressed - hiding WASD hint");
-    }
-  }
-}
-// key released events
-function keyReleased() {
-  // turn key to lowercase
-  const keyChar = key.toLowerCase();
-  // set key pressed state to false
-  if (keyChar === 'w') {
-    character.keysPressed.w = false;
-  } else if (keyChar === 'a') {
-    character.keysPressed.a = false;
-  } else if (keyChar === 's') {
-    character.keysPressed.s = false;
-  } else if (keyChar === 'd') {
-    character.keysPressed.d = false;
-  }
-}
-
-// draw WASD hint
+// ========== WASD hint functions ==========
 function drawWASDHint() {
   if (!showWASDHint) return;
-  // 1. set basic keyboard parameters (same calculation as in drawKeyboard)
+  
+  // ========== 基于画布大小直接计算所有尺寸 ==========
+  // 1. 计算键盘的基本参数（与drawKeyboard中相同的计算方式）
   const keyboardWidth = width / 6;
   const keyboardHeight = height / 2;
-  const cellSize = keyboardWidth / 3; // theoretical size of a normal key
+  const cellSize = keyboardWidth / 3; // 普通键的理论尺寸
   const keyboardX = (width / 8) - (keyboardWidth / 2);
   const keyboardY = (height * 0.4) - (keyboardHeight / 2);
-  const padding = 4; // key spacing inside keyboard
-  // 2. set Enter key position and size
-  // Enter key in keyboard layout: col=1, row=2, width=2, height=1
-  const enterKeyCols = 2; // Enter key occupies 2 columns
-  const enterKeyRows = 1; // Enter key occupies 1 row
+  const padding = 4; // 键盘内键间隔
+  
+  // 2. 计算Enter键的位置和尺寸
+  // Enter键在键盘布局中：col=1, row=2, width=2, height=1
+  const enterKeyCols = 2; // Enter键占用2列
+  const enterKeyRows = 1; // Enter键占用1行
   const enterKeyWidth = enterKeyCols * cellSize - padding * 2;
   const enterKeyHeight = enterKeyRows * cellSize - padding * 2;
   const enterKeyX = keyboardX + 1 * cellSize + padding;
   const enterKeyY = keyboardY + 2 * cellSize + padding;
+  
+  // Enter键的右边界和底部
   const enterKeyRight = enterKeyX + enterKeyWidth;
   const enterKeyBottom = enterKeyY + enterKeyHeight;
-  // 3. set small key size and spacing
-  const smallKeySize = cellSize * 0.25; // setting small key size
-  const smallKeySpacing = padding * 0.25; // setting small key spacing
-  // 4. set small keyboard position
-  // allign left edge of A key with right edge of Enter key plus padding
+  
+  // 3. 计算小键盘尺寸
+  const smallKeySize = cellSize * 0.25; // 边长为普通键的1/4
+  const smallKeySpacing = padding * 0.25; // 间隔为键盘间隔的1/4
+  
+  // 4. 计算小键盘位置
+  // A键左侧边界与Enter键右边界间隔为键盘内部每个键的间隔大小（即padding）
   const aKeyLeft = enterKeyRight + padding;
-  // align bottom edge of A key with bottom edge of Enter key
+  // A键底部与键盘底部enter键底部齐平
   const aKeyBottom = enterKeyBottom;
-  const aKeyY = aKeyBottom - smallKeySize; // top position of A key
-  // set small key positions
+  const aKeyY = aKeyBottom - smallKeySize; // A键的y坐标（顶部坐标）
+  
+  // 5. 计算每个键的位置
   const keyPositions = {
     'A': { x: aKeyLeft, y: aKeyY },
     'S': { x: aKeyLeft + smallKeySize + smallKeySpacing, y: aKeyY },
@@ -2171,17 +1632,21 @@ function drawWASDHint() {
       y: aKeyY - smallKeySize - smallKeySpacing 
     }
   };
-  // set key color
+  
+  // 6. 定义每个键的颜色（全部使用#cad4af）
   const keyColors = {
     'W': [202, 212, 175], // #cad4af
     'A': [202, 212, 175], // #cad4af
     'S': [202, 212, 175], // #cad4af
     'D': [202, 212, 175]  // #cad4af
   };
-  // draw small keys
+  
+  // 7. 绘制所有键
   push();
   
   const currentAlpha = wasdHintAlpha;
+  
+  // 绘制四个键
   for (const [letter, pos] of Object.entries(keyPositions)) {
     drawSmallKey(
       pos.x, pos.y, 
@@ -2194,6 +1659,7 @@ function drawWASDHint() {
   
   pop();
 }
+
 function drawSmallKey(x, y, w, h, letter, colorArray, alphaValue) {
   push();
   
@@ -2212,21 +1678,358 @@ function drawSmallKey(x, y, w, h, letter, colorArray, alphaValue) {
   
   pop();
 }
+
+// ========== 阴影效果函数 ==========
+function drawShadowEffect() {
+  // 获取小人底边中点坐标
+  const characterX = character.x;
+  const characterY = character.y;
+  
+  // 获取画布边界
+  const canvasLeft = 0;
+  const canvasRight = width;
+  const canvasTop = 0;
+  const canvasBottom = height;
+  
+  // 我们需要为每个建筑计算阴影，所以需要遍历所有建筑
+  for (let i = 0; i < buildings.length; i++) {
+    const building = buildings[i];
+    const { x: buildingX, y: buildingY, initWidth, initHeight } = building;
+    
+    // 获取建筑底部椭圆的左右端点
+    const leftPointX = buildingX - initWidth/2;
+    const leftPointY = buildingY;
+    const rightPointX = buildingX + initWidth/2;
+    const rightPointY = buildingY;
+    
+    // 修改射线方向：从建筑端点出发，经过小人底边中点，继续延伸
+    const ray1 = calculateRayIntersection(
+      leftPointX, leftPointY,  // 起点：建筑左端点
+      characterX, characterY,  // 经过点：小人底边中点
+      canvasLeft, canvasRight, canvasTop, canvasBottom
+    );
+    
+    const ray2 = calculateRayIntersection(
+      rightPointX, rightPointY,  // 起点：建筑右端点
+      characterX, characterY,    // 经过点：小人底边中点
+      canvasLeft, canvasRight, canvasTop, canvasBottom
+    );
+    
+    if (ray1.intersection && ray2.intersection) {
+      // 获取两个交点
+      const point1 = ray1.intersection;
+      const point2 = ray2.intersection;
+      
+      // 绘制阴影三角形
+      drawShadowTriangle(characterX, characterY, point1, point2, building);
+    }
+  }
+}
+
+// 计算射线与画布边界的交点
+function calculateRayIntersection(startX, startY, throughX, throughY, left, right, top, bottom) {
+  // 射线方向向量：从起点（建筑端点）指向经过点（小人底边中点）
+  // 然后继续沿同一方向延伸
+  const dx = throughX - startX;
+  const dy = throughY - startY;
+  
+  // 如果dx和dy都为0，说明起点和经过点重合，无法确定方向
+  if (dx === 0 && dy === 0) return { intersection: null, t: Infinity };
+  
+  // 计算与四条边界的交点参数t（t > 0 表示沿方向向量延伸）
+  let tValues = [];
+  let intersectionPoints = [];
+  
+  // 与左边界相交 (x = left)
+  if (dx !== 0) {
+    const t = (left - startX) / dx;
+    if (t > 0) {
+      const y = startY + t * dy;
+      if (y >= top && y <= bottom) {
+        tValues.push(t);
+        intersectionPoints.push({ x: left, y: y, edge: 'left' });
+      }
+    }
+  }
+  
+  // 与右边界相交 (x = right)
+  if (dx !== 0) {
+    const t = (right - startX) / dx;
+    if (t > 0) {
+      const y = startY + t * dy;
+      if (y >= top && y <= bottom) {
+        tValues.push(t);
+        intersectionPoints.push({ x: right, y: y, edge: 'right' });
+      }
+    }
+  }
+  
+  // 与上边界相交 (y = top)
+  if (dy !== 0) {
+    const t = (top - startY) / dy;
+    if (t > 0) {
+      const x = startX + t * dx;
+      if (x >= left && x <= right) {
+        tValues.push(t);
+        intersectionPoints.push({ x: x, y: top, edge: 'top' });
+      }
+    }
+  }
+  
+  // 与下边界相交 (y = bottom)
+  if (dy !== 0) {
+    const t = (bottom - startY) / dy;
+    if (t > 0) {
+      const x = startX + t * dx;
+      if (x >= left && x <= right) {
+        tValues.push(t);
+        intersectionPoints.push({ x: x, y: bottom, edge: 'bottom' });
+      }
+    }
+  }
+  
+  // 找到最小的正t值（最近的交点）
+  if (tValues.length > 0) {
+    let minT = Infinity;
+    let minIndex = -1;
+    
+    for (let i = 0; i < tValues.length; i++) {
+      if (tValues[i] < minT && tValues[i] > 0.1) { // t > 0.1 确保不会选择离起点太近的交点
+        minT = tValues[i];
+        minIndex = i;
+      }
+    }
+    
+    if (minIndex !== -1) {
+      return {
+        intersection: intersectionPoints[minIndex],
+        t: minT
+      };
+    }
+  }
+  
+  return { intersection: null, t: Infinity };
+}
+
+// 绘制阴影三角形（或多边形）
+function drawShadowTriangle(centerX, centerY, point1, point2, building) {
+  push();
+  noStroke();
+  
+  // 检查两个交点是否在同一边上
+  const sameEdge = point1.edge === point2.edge;
+  
+  // 收集所有顶点
+  let allVertices = [];  // 将变量名从vertices改为allVertices
+  
+  if (sameEdge) {
+    // 如果两个交点在同一个边上，直接连接三个点形成三角形
+    allVertices = [
+      { x: centerX, y: centerY },  // 顶点：小人底边中点
+      { x: point1.x, y: point1.y }, // 交点1
+      { x: point2.x, y: point2.y }  // 交点2
+    ];
+  } else {
+    // 如果两个交点在不同的边上，需要添加画布角点
+    // 找到距离两个交点最近的画布角点
+    const corners = [
+      { x: 0, y: 0 },           // 左上
+      { x: width, y: 0 },       // 右上
+      { x: width, y: height },  // 右下
+      { x: 0, y: height }       // 左下
+    ];
+    
+    // 计算每个角点到两个交点的距离之和
+    let minDistance = Infinity;
+    let nearestCorner = corners[0];
+    
+    for (const corner of corners) {
+      const dist1 = dist(corner.x, corner.y, point1.x, point1.y);
+      const dist2 = dist(corner.x, corner.y, point2.x, point2.y);
+      const totalDist = dist1 + dist2;
+      
+      if (totalDist < minDistance) {
+        minDistance = totalDist;
+        nearestCorner = corner;
+      }
+    }
+    
+    // 确定顶点的顺序（顺时针或逆时针）
+    // 我们按照顺时针顺序：中心点 -> 交点1 -> 角点 -> 交点2
+    allVertices = [
+      { x: centerX, y: centerY },  // 顶点：小人底边中点
+      { x: point1.x, y: point1.y }, // 交点1
+      { x: nearestCorner.x, y: nearestCorner.y }, // 最近的画布角点
+      { x: point2.x, y: point2.y }  // 交点2
+    ];
+  }
+  
+  // 计算所有顶点到中心点的距离，找到最远距离
+  let maxDist = 0;
+  for (const v of allVertices) {  // 改为使用v而不是vertex
+    const d = dist(centerX, centerY, v.x, v.y);
+    if (d > maxDist) maxDist = d;
+  }
+  
+  // 创建径向渐变
+  const gradient = drawingContext.createRadialGradient(
+    centerX, centerY, 0,           // 内圆圆心和半径
+    centerX, centerY, maxDist      // 外圆圆心和半径
+  );
+  
+  // 顶点颜色：#f6f5dd，透明度0
+  const vertexColor = `rgba(246, 245, 221, 0)`;
+  // 边缘颜色：#e0a615，透明度30%
+  const edgeColor = `rgba(224, 166, 21, 0.3)`;
+  
+  gradient.addColorStop(0, vertexColor);
+  gradient.addColorStop(1, edgeColor);
+  
+  // 应用渐变
+  drawingContext.fillStyle = gradient;
+  
+  // 绘制多边形
+  beginShape();
+  for (const v of allVertices) {  // 改为使用v而不是vertex
+    vertex(v.x, v.y);
+  }
+  endShape(CLOSE);
+  
+  pop();
+}
+
+// ========== 追踪三角形函数 ==========
+function drawMonitorEffect(building) {
+  // 获取建筑信息
+  const { x: buildingX, y: buildingY, initWidth, initHeight, color: buildingColor } = building;
+  
+  // 获取小人底边中点坐标
+  const characterX = character.x;
+  const characterY = character.y;
+  
+  // 使用椭圆左右端点作为近似切点（简化版本）
+  const leftPointX = buildingX - initWidth/2;
+  const leftPointY = buildingY;
+  const rightPointX = buildingX + initWidth/2;
+  const rightPointY = buildingY;
+  
+  // 绘制三角形
+  push();
+  noStroke();
+  
+  // 计算径向渐变的参数
+  const centerX = characterX;
+  const centerY = characterY;
+  
+  // 计算到两个端点的距离
+  const distLeft = dist(centerX, centerY, leftPointX, leftPointY);
+  const distRight = dist(centerX, centerY, rightPointX, rightPointY);
+  const maxDist = max(distLeft, distRight);
+  
+  // 创建径向渐变
+  const gradient = drawingContext.createRadialGradient(
+    centerX, centerY, 0,
+    centerX, centerY, maxDist
+  );
+  
+  // 获取建筑底部椭圆的颜色和透明度
+  const buildingAlpha = alpha(buildingColor);
+  const buildingRed = red(buildingColor);
+  const buildingGreen = green(buildingColor);
+  const buildingBlue = blue(buildingColor);
+  
+  // 顶点颜色修改为：#f6f5dd，透明度50%
+  const vertexColor = `rgba(246, 245, 221, 0.5)`;
+  // 底边颜色：建筑底部椭圆的颜色和透明度
+  const baseColor = `rgba(${buildingRed}, ${buildingGreen}, ${buildingBlue}, ${buildingAlpha})`;
+  
+  // 设置渐变颜色
+  gradient.addColorStop(0, vertexColor);
+  gradient.addColorStop(1, baseColor);
+  
+  // 应用渐变
+  drawingContext.fillStyle = gradient;
+  
+  // 绘制三角形
+  beginShape();
+  vertex(characterX, characterY);    // 顶点：小人底边中点
+  vertex(leftPointX, leftPointY);    // 左端点
+  vertex(rightPointX, rightPointY);  // 右端点
+  endShape(CLOSE);
+  
+  pop();
+}
+
+// ========== 覆盖矩形函数 ==========
+function drawCoverRect() {
+  push();
+  
+  // 计算键盘的基本参数（与drawKeyboard中相同的计算方式）
+  const keyboardWidth = width / 6;
+  const keyboardHeight = height / 2;
+  const cellSize = keyboardWidth / 3;
+  const keyboardX = (width / 8) - (keyboardWidth / 2);
+  const keyboardY = (height * 0.4) - (keyboardHeight / 2);
+  const padding = 4; // 键盘内键间隔
+  
+  // 矩形宽度：从画布最左侧到键盘右侧加上三个键盘内部键的间隔
+  const rectRight = keyboardX + keyboardWidth + 3 * padding;
+  
+  // 设置矩形样式
+  noStroke();
+  fill(246, 245, 221); // 与背景相同的颜色 #f6f5dd
+  
+  // 绘制矩形：覆盖从画布左侧到键盘右侧+padding的区域，高度为整个画布
+  rect(0, 0, rectRight, height);
+  
+  pop();
+}
+
 // ========== resize function ==========
 function windowResized() {
-  // 如果正在拍照，停止摄像头
-  if (takingSelfie && capture) {
-    capture.stop();
-    capture = null;
-    takingSelfie = false;
-  }
-  
-  // 移除相机界面
-  const cameraContainer = select('#ascii-camera-container');
-  if (cameraContainer) {
-    cameraContainer.remove();
-  }
-  
-  // 调整Canvas大小
+  // resize Canvas
   resizeCanvas(windowWidth, windowHeight * 0.5);
+}
+// ========== 重置函数 ==========
+function resetAllData() {
+  // 重置所有用户数据
+  currentLetter = 1;
+  plasticCounts = {P:0, L:0, A:0, S:0, T:0, I:0, C:0};
+  userTendency = 0;
+  earlyChoices = [null, null, null];
+  buildings = [];
+  previousRoundCount = 0;
+  
+  // 重置角色位置
+  character.x = character.initX || 0;
+  character.y = character.initY || 0;
+  
+  // 重置WASD提示
+  showWASDHint = true;
+  wasdHintAlpha = 0;
+  wasdHintPhase = 0;
+  
+  // 停止所有音频
+  if (bgMusic && bgMusic.isPlaying()) bgMusic.stop();
+  if (bgNature && bgNature.isPlaying()) bgNature.stop();
+  if (bgMachine && bgMachine.isPlaying()) bgMachine.stop();
+  isAudioPlaying = false;
+  
+  console.log("所有数据已重置，准备重新测试。");
+}
+// ========== 重新测试函数 ==========
+function retakeTest() {
+  console.log("Retaking the test...");
+  
+  // 重置所有数据
+  resetAllData();
+  
+  // 切换回开始界面
+  select('#end-screen').addClass('hidden');
+  select('#start-screen').removeClass('hidden');
+  
+  // 重置表单
+  select('#first-name').value('');
+  select('#last-name').value('');
+  select('#gender').value('');
 }

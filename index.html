@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dear Future - SAVE PLANET JOIN GREENPEACE</title>
+    <title>WELCOME TO GREENPLACE</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <!-- create start screen -->
     <div id="start-screen" class="screen">
-        <h1>GREENPEACE Shareholder Compatibility Test</h1>
+        <h1>GREENPLACE Shareholder Compatibility Test</h1>
         <div id="user-info-form">
             <input type="text" id="first-name" placeholder="First Name" required>
             <input type="text" id="last-name" placeholder="Last Name" required>
@@ -41,15 +41,46 @@
         </div>
     </div>
 
-    <!-- create end screen -->
-    <div id="end-screen" class="screen hidden">
-        <div id="report-content">
-            <!-- Generate report through JavaScript -->
-        </div>
-        <div id="selfie-option">
-            <button id="take-selfie">Continue our cooperation</button>
+<!-- 在index.html的end-screen部分修改 -->
+<div id="end-screen" class="screen hidden">
+    <div id="report-content">
+        <!-- 报告内容将通过JavaScript生成 -->
+    </div>
+    
+    <!-- 添加圆形思维倾向进度环 -->
+    <div id="thinking-progress-container">
+        <h3>Your Innovation Mind</h3>
+        
+        <div class="circular-progress-container">
+            <!-- 圆形进度环 -->
+            <div class="circular-progress">
+                <!-- SVG圆环 -->
+                <svg class="circular-svg" viewBox="0 0 100 100">
+                    <!-- 背景圆环 (传统色) -->
+                    <circle class="circular-bg" cx="50" cy="50" r="45"></circle>
+                    <!-- 前景圆弧 (创新色) -->
+                    <circle class="circular-fg" cx="50" cy="50" r="45" 
+                            stroke-dasharray="0 283" 
+                            transform="rotate(-90 50 50)"></circle>
+                </svg>
+                
+                <!-- 中心百分比显示 -->
+                <div class="circular-progress-center" id="circular-progress-percentage">50%</div>
+            </div>
+            
+            <!-- 标签 -->
+            <div class="progress-labels">
+                <span class="progress-label tradition-label" id="tradition-label">Tradition</span>
+                <span class="progress-label innovation-label" id="innovation-label">Innovation</span>
+            </div>
         </div>
     </div>
+    
+    <!-- 重新测试按钮 -->
+    <div id="retake-option">
+        <button id="retake-test">Retake the Test</button>
+    </div>
+</div>
 
     <!-- Import JavaScript libraries and scripts -->
     <script src="p5.js"></script>
